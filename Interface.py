@@ -26,12 +26,22 @@ class MyFrame(wx.Frame):
         zlec2 = button.Append(wx.ID_ANY,"Przegladaj","Przegladaj zlecenia")
 
         menu.Append(button,"Zlecenia")
+
+        button = wx.Menu()
+        kier1 = button.Append(wx.ID_ANY,"Dodaj","Dodaj kierowcę")
+        kier2 = button.Append(wx.ID_ANY,"Przegladaj","Status kierowców")
+
+        menu.Append(button,"Kierowcy")
+
+        button = wx.Menu()
+        opcje1 = button.Append(wx.ID_ANY,"Pomoc","Menu pomocy")
+        opcje2 = button.Append(wx.ID_EXIT,"Wyjście","Wyjście z aplikacji")
+        menu.Append(button,"Opcje")
+        
         self.SetMenuBar(menu)
         self.Show()
 
     
-        
-
 class MyPanel(wx.Panel):
     def __init__(self,parent):
         super().__init__(parent=parent)
