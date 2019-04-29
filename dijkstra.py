@@ -1,11 +1,11 @@
 from collections import defaultdict, deque
 import sqlite3
 from datetime import datetime
-
+'''
 db = sqlite3.connect('ASJW.db')
 db.row_factory = sqlite3.Row
 kursor = db.cursor()
-
+'''
 
 class Graph(object):
     def __init__(self):
@@ -21,9 +21,9 @@ class Graph(object):
         self.edges[to_node].append(from_node)
         self.distances[(from_node, to_node)] = distance
         self.distances[(to_node, from_node)] = distance
-
+'''
 graph = Graph()
-
+'''
 def dijkstra(graph, initial):
     visited = {initial: 0}
     path = {}
@@ -70,7 +70,7 @@ def shortest_path(graph, origin, destination):
         full_path.append(destination)
     
         return int(visited[destination]), list(full_path)
-
+'''
 kursor.execute(
         """
         SELECT miejscowosc_A, miejscowosc_B, czas FROM PUNKTY_MAPY
@@ -93,6 +93,7 @@ i = 0
 while i < len(z):
     graph.add_edge(str(z[i]), str(s[i]), int(t[i]))
     i = i + 1
+
 
 def kierowcy(y):
     kursor.execute(
@@ -131,3 +132,4 @@ def dodaj_zlecenie():
     kursor.execute(sql, task)
     print(shortest_path(graph, skad, dokad))
     return kierowcy(skad)
+'''
