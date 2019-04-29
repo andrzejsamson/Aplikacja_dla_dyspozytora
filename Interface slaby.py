@@ -1,13 +1,12 @@
 import wx
 
 class App(wx.App):
-
     def __init__(self):
         super().__init__(clearSigInt=True)
         self.InitFrame()
 
     def InitFrame(self):
-        frame= MyFrame(parent=None, title="Aplikacja dyspozytora")
+        frame = MyFrame(parent=None, title="Aplikacja dyspozytora")
         frame.Show()
 
 class MyFrame(wx.Frame):
@@ -40,12 +39,10 @@ class MyFrame(wx.Frame):
         
         self.SetMenuBar(menu)
         self.Show()
-
     
 class MyPanel(wx.Panel):
     def __init__(self,parent):
         super().__init__(parent=parent)
-      
 
 
 if True:
