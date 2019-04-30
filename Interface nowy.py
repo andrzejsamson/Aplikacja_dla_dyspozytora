@@ -33,6 +33,13 @@ while i < len(z):
     i = i + 1
 
 newzbior = list(dict.fromkeys(zbior))
+newzbior = sorted(newzbior)
+newzbior.remove('A')
+newzbior.remove('B')
+newzbior.remove('C')
+newzbior.remove('D')
+newzbior.remove('E')
+newzbior.remove('F')
 
 class PanelOne(wx.Panel):
     def __init__(self, parent):
@@ -42,16 +49,70 @@ class PanelOne(wx.Panel):
 class PanelTwo(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent, size=(400,200), pos=(0,110))
+        self.miejscA = str()
+        self.miejscB = str()
+        self.ciezar = str()
         self.quote = wx.StaticText(self, label="Trwa dodawanie zlecenia...", pos=(10, 10))
         self.sampleList = newzbior
-        self.lblhear = wx.StaticText(self, label="Miejscowosc poczatkowa:", pos=(10, 40))
-        self.edithear = wx.ComboBox(self, pos=(150, 40), choices=self.sampleList, style=wx.CB_DROPDOWN)
-        self.lblhear = wx.StaticText(self, label="Miejscowosc koncowa:", pos=(10, 70))
-        self.edithear = wx.ComboBox(self, pos=(150, 70), choices=self.sampleList, style=wx.CB_DROPDOWN)
+        self.lblhear1 = wx.StaticText(self, label="Miejscowosc poczatkowa:", pos=(10, 40))
+        self.edithear1 = wx.ComboBox(self, pos=(150, 40), choices=self.sampleList, style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.MiejscA, self.edithear1)
+        self.lblhear2 = wx.StaticText(self, label="Miejscowosc koncowa:", pos=(10, 70))
+        self.edithear2 = wx.ComboBox(self, pos=(150, 70), choices=self.sampleList, style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.MiejscB, self.edithear2)
         waga = ['100', '200', '300', '400', '500', '600', '700', '800', '900', '1000']
         self.sampleList2 = waga
-        self.lblhear = wx.StaticText(self, label="Waga:", pos=(10, 100))
-        self.edithear = wx.ComboBox(self, pos=(150, 100), choices=self.sampleList2, style=wx.CB_DROPDOWN)
+        self.lblhear3 = wx.StaticText(self, label="Waga:", pos=(10, 100))
+        self.edithear3 = wx.ComboBox(self, pos=(150, 100), choices=self.sampleList2, style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.Ciezar, self.edithear3)
+        self.buttonZlec = wx.Button(self, label="Next", pos=(250,170))
+        self.Bind(wx.EVT_BUTTON, self.OnClickZlec, self.buttonZlec)
+
+    def MiejscA(self, event):
+        self.miejscA = event.GetString()
+
+    def MiejscB(self, event):
+        self.miejscB = event.GetString()
+
+    def Ciezar(self, event):
+        self.ciezar = event.GetString()
+
+    def OnClickZlec(self, e):
+        if self.miejscA == '' or self.miejscB == '' or self.ciezar == '':
+            bladZlec = wx.MessageDialog(self, "Wybierz wszystkie pozycje", "Błąd wyboru", wx.OK)
+            bladZlec.ShowModal()
+            bladZlec.Destroy()
+        else:
+            self.edithear1.Hide()
+            self.edithear2.Hide()
+            self.edithear3.Hide()
+            self.buttonZlec.Hide()
+            self.par1 = wx.StaticText(self, label="%s" %self.miejscA, pos=(150, 40))
+            self.par2 = wx.StaticText(self, label="%s" %self.miejscB, pos=(150, 70))
+            self.par3 = wx.StaticText(self, label="%s" %self.ciezar, pos=(150, 100))
+            self.lblhear4 = wx.StaticText(self, label="Lista kierowcow:", pos=(10,130))
+
+            kursor.execute(
+                """
+                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
+                """)
+            kierowcy = kursor.fetchall()
+            k = list()
+            m = list()
+            for SAMOCHODY in kierowcy:
+                k.append(SAMOCHODY['miejsce_przebywania'])
+                m.append(SAMOCHODY['id_samochodu'])
+            w = {}
+            e = {}
+            for i in range(len(k)):
+                w[m[i]],e[m[i]] = dij.shortest_path(graph, str(k[i]), self.miejscA)
+            lista = sorted(w.items(), key=lambda x: x[1])
+            lista2 = []
+            for elem in lista:
+                lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
+            self.sampleList3 = lista2
+            self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+            self.buttonEnd1 = wx.Button(self, label="Accept", pos=(250,170))
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -96,7 +157,7 @@ class Okno(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
         
     def DodZlec(self, e):
-            self.panel_two.Show()
+        self.panel_two.Show()
     
     def OnHelp(self, e):
         dialog = wx.MessageDialog(self, "W celu uzyskania pomocy pisz do jedrekwisniewski@wp.pl", "Okno Pomocy", wx.OK)
@@ -106,7 +167,6 @@ class Okno(wx.Frame):
     def OnExit(self,e):
         self.Close()
         
-
 app = wx.App(False)
 frame = Okno(None, "Aplikacja dyspozytora")
 frame.Show()

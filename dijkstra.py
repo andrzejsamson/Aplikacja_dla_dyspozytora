@@ -1,11 +1,6 @@
 from collections import defaultdict, deque
 import sqlite3
 from datetime import datetime
-'''
-db = sqlite3.connect('ASJW.db')
-db.row_factory = sqlite3.Row
-kursor = db.cursor()
-'''
 
 class Graph(object):
     def __init__(self):
@@ -21,9 +16,7 @@ class Graph(object):
         self.edges[to_node].append(from_node)
         self.distances[(from_node, to_node)] = distance
         self.distances[(to_node, from_node)] = distance
-'''
-graph = Graph()
-'''
+
 def dijkstra(graph, initial):
     visited = {initial: 0}
     path = {}
@@ -71,54 +64,6 @@ def shortest_path(graph, origin, destination):
     
         return int(visited[destination]), list(full_path)
 '''
-kursor.execute(
-        """
-        SELECT miejscowosc_A, miejscowosc_B, czas FROM PUNKTY_MAPY
-        """)
-punkty = kursor.fetchall()
-zbior = list()
-z = list()
-s = list()
-t = list()
-for PUNKTY_MAPY in punkty:
-    z.append(PUNKTY_MAPY['miejscowosc_A'])
-    s.append(PUNKTY_MAPY['miejscowosc_B'])
-    t.append(PUNKTY_MAPY['czas'])
-    zbior = z + s
-        
-for node in zbior:
-    graph.add_node(node)
-
-i = 0
-while i < len(z):
-    graph.add_edge(str(z[i]), str(s[i]), int(t[i]))
-    i = i + 1
-
-
-def kierowcy(y):
-    kursor.execute(
-        """
-        SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
-        """)
-    kierowcy = kursor.fetchall()
-    k = list()
-    m = list()
-    for SAMOCHODY in kierowcy:
-        k.append(SAMOCHODY['miejsce_przebywania'])
-        m.append(SAMOCHODY['id_samochodu'])
-    
-    if y in zbior:
-        w = {}
-        i = 0
-        while i < len(k):
-            w[m[i]] = shortest_path(graph, str(k[i]), y)
-            i = i + 1
-        lista=sorted(w.items(), key=lambda x: x[1])
-        for elem in lista :
-            print(elem[0] , "::", elem[1])
-    else:
-        return("Nie ma takiej miejscowości w bazie")
-
 def dodaj_zlecenie():
     print("Podaj skąd: ")
     skad = input()
