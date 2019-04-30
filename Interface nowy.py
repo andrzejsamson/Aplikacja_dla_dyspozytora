@@ -52,6 +52,7 @@ class PanelTwo(wx.Panel):
         self.miejscA = str()
         self.miejscB = str()
         self.ciezar = str()
+        self.kierowca = str()
         self.quote = wx.StaticText(self, label="Trwa dodawanie zlecenia...", pos=(10, 10))
         self.sampleList = newzbior
         self.lblhear1 = wx.StaticText(self, label="Miejscowosc poczatkowa:", pos=(10, 40))
@@ -77,7 +78,7 @@ class PanelTwo(wx.Panel):
     def Ciezar(self, event):
         self.ciezar = event.GetString()
 
-    def OnClickZlec(self, e):
+    def OnClickZlec(self, event):
         if self.miejscA == '' or self.miejscB == '' or self.ciezar == '':
             bladZlec = wx.MessageDialog(self, "Wybierz wszystkie pozycje", "Błąd wyboru", wx.OK)
             bladZlec.ShowModal()
@@ -112,7 +113,12 @@ class PanelTwo(wx.Panel):
                 lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
             self.sampleList3 = lista2
             self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+            self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
             self.buttonEnd1 = wx.Button(self, label="Accept", pos=(250,170))
+            #self.Bind(wx.EVT_BUTTON, self.OnClickAccept, self.buttonEnd1)
+
+    def Kierowca(self, event):
+        self.kierowca = event.GetString()
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
