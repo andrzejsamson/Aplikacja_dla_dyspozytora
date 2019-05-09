@@ -66,7 +66,7 @@ class PanelTwo(wx.Panel):
         self.lblhear3 = wx.StaticText(self, label="Waga:", pos=(10, 100))
         self.edithear3 = wx.ComboBox(self, pos=(150, 100), choices=self.sampleList2, style=wx.CB_DROPDOWN)
         self.Bind(wx.EVT_COMBOBOX, self.Ciezar, self.edithear3)
-        self.buttonZlec = wx.Button(self, label="Next", pos=(250,170))
+        self.buttonZlec = wx.Button(self, label="Dodaj", pos=(250,170))
         self.Bind(wx.EVT_BUTTON, self.OnClickZlec, self.buttonZlec)
 
     def MiejscA(self, event):
@@ -84,41 +84,26 @@ class PanelTwo(wx.Panel):
             bladZlec.ShowModal()
             bladZlec.Destroy()
         else:
-            self.edithear1.Hide()
-            self.edithear2.Hide()
-            self.edithear3.Hide()
-            self.buttonZlec.Hide()
-            self.par1 = wx.StaticText(self, label="%s" %self.miejscA, pos=(150, 40))
-            self.par2 = wx.StaticText(self, label="%s" %self.miejscB, pos=(150, 70))
-            self.par3 = wx.StaticText(self, label="%s" %self.ciezar, pos=(150, 100))
-            self.lblhear4 = wx.StaticText(self, label="Lista kierowcow:", pos=(10,130))
-
+            # można dodać info czy jestes pewny
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            task = (self.miejscA, self.miejscB, self.ciezar, now)
+            sql = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
+            kursor.execute(sql, task)
+            db.commit()
             kursor.execute(
                 """
-                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
+                SELECT ID_zlecenia FROM zlecenia
                 """)
-            kierowcy = kursor.fetchall()
-            k = list()
-            m = list()
-            for SAMOCHODY in kierowcy:
-                k.append(SAMOCHODY['miejsce_przebywania'])
-                m.append(SAMOCHODY['id_samochodu'])
-            w = {}
-            e = {}
-            for i in range(len(k)):
-                w[m[i]],e[m[i]] = dij.shortest_path(graph, str(k[i]), self.miejscA)
-            lista = sorted(w.items(), key=lambda x: x[1])
-            lista2 = []
-            for elem in lista:
-                lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
-            self.sampleList3 = lista2
-            self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
-            self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
-            self.buttonEnd1 = wx.Button(self, label="Accept", pos=(250,170))
-            #self.Bind(wx.EVT_BUTTON, self.OnClickAccept, self.buttonEnd1)
-
-    def Kierowca(self, event):
-        self.kierowca = event.GetString()
+            zlecenia = kursor.fetchall()
+            for ID_zlecenia in zlecenia:
+                aktualne = ID_zlecenia
+            sql2 = """ INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,NULL,NULL) """
+            kursor.execute(sql2, aktualne)
+            db.commit()
+            potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Potwierdzenie", wx.OK)
+            potwierdzenie.ShowModal()
+            potwierdzenie.Destroy()
+            self.Hide()
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -177,3 +162,37 @@ app = wx.App(False)
 frame = Okno(None, "Aplikacja dyspozytora")
 frame.Show()
 app.MainLoop()
+
+'''
+self.par1 = wx.StaticText(self, label="%s" %self.miejscA, pos=(150, 40))
+            self.par2 = wx.StaticText(self, label="%s" %self.miejscB, pos=(150, 70))
+            self.par3 = wx.StaticText(self, label="%s" %self.ciezar, pos=(150, 100))
+            self.lblhear4 = wx.StaticText(self, label="Lista kierowcow:", pos=(10,130))
+
+            kursor.execute(
+                """
+                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
+                """)
+            kierowcy = kursor.fetchall()
+            k = list()
+            m = list()
+            for SAMOCHODY in kierowcy:
+                k.append(SAMOCHODY['miejsce_przebywania'])
+                m.append(SAMOCHODY['id_samochodu'])
+            w = {}
+            e = {}
+            for i in range(len(k)):
+                w[m[i]],e[m[i]] = dij.shortest_path(graph, str(k[i]), self.miejscA)
+            lista = sorted(w.items(), key=lambda x: x[1])
+            lista2 = []
+            for elem in lista:
+                lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
+            self.sampleList3 = lista2
+            self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+            self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
+            self.buttonEnd1 = wx.Button(self, label="Accept", pos=(250,170))
+            #self.Bind(wx.EVT_BUTTON, self.OnClickAccept, self.buttonEnd1)
+
+    def Kierowca(self, event):
+        self.kierowca = event.GetString()
+'''

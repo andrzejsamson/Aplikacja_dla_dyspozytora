@@ -12,9 +12,9 @@ CREATE TABLE ZLECENIA
 	PRIMARY KEY(ID_zlecenia));
 CREATE TABLE WYKONANIA
 	(ID_wykonania INTEGER,
-	ID_zlecenia INTEGER NOT NULL,
-	ID_samochodu INTEGER NOT NULL,
-	data_wykonania DATE NOT NULL,
+	ID_zlecenia INTEGER,
+	ID_samochodu INTEGER,
+	data_wykonania DATE,
 	PRIMARY KEY(ID_wykonania),
 	FOREIGN KEY(ID_zlecenia) REFERENCES ZLECENIA(ID_zlecenia),
 	FOREIGN KEY(ID_samochodu) REFERENCES SAMOCHODY(ID_samochodu));
