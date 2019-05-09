@@ -22,7 +22,7 @@ for PUNKTY_MAPY in punkty:
     z.append(PUNKTY_MAPY['miejscowosc_A'])
     s.append(PUNKTY_MAPY['miejscowosc_B'])
     t.append(PUNKTY_MAPY['czas'])
-    zbior = z + s
+zbior = z + s
         
 for node in zbior:
     graph.add_node(node)
@@ -109,7 +109,78 @@ class PanelZlecPrzydziel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent, size=(400,200), pos=(0,110))
         self.wiadomosc = wx.StaticText(self, label="Lista wolnych zleceń:", pos=(10, 10))
-        self.listbox = wx.ListBox(self, pos=(10, 30), size=(180, 150))
+        self.listbox = wx.ListBox(self, pos=(10, 30), size=(360, 100))
+        self.Bind(wx.EVT_LISTBOX, self.skad, self.listbox)
+        kursor.execute(
+        """
+        SELECT ID_zlecenia, skad, dokad, masa, data_przyjscia FROM Zlecenia NATURAL JOIN Wykonania WHERE data_wykonania IS NULL ORDER BY data_przyjscia
+        """)
+        wykonania = kursor.fetchall()
+        self.pier = list()
+        self.dwa = list()
+        self.trzy = list()
+        lista = list()
+        
+        for i in wykonania:
+            self.pier.append(i['skad'])
+            self.dwa.append(i['dokad'])
+            self.trzy.append(i['ID_zlecenia'])
+            lista.append(i['skad'] + ":" + i['dokad'] + ":" + str(i['masa']) + ":" + i['data_przyjscia'])
+        self.listbox.InsertItems(lista,0)
+
+        self.buttonPrzydziel = wx.Button(self, label="Przydziel kierowcę", pos=(10,170))
+        self.Bind(wx.EVT_BUTTON, self.PrzydzielKier, self.buttonPrzydziel)
+
+    def skad(self, event):
+        self.skad = self.listbox.GetSelection()
+        self.pier1 = self.pier[self.skad]
+        self.dwa1 = self.dwa[self.skad]
+        self.trzy1 = self.trzy[self.skad]
+
+    def PrzydzielKier(self, event):
+        self.listbox.Hide()
+        self.buttonPrzydziel.Hide()
+        self.ppaarr11 = wx.StaticText(self, label="Miejscowosc poczatkowa:", pos=(10, 40))
+        self.par1 = wx.StaticText(self, label="%s" %self.pier1, pos=(150, 40))
+        self.ppaarr22 = wx.StaticText(self, label="Miejscowosc koncowa:", pos=(10, 70))
+        self.par2 = wx.StaticText(self, label="%s" %self.dwa1, pos=(150, 70))
+        kursor.execute(
+                """
+                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
+                """)
+        kierowcy = kursor.fetchall()
+        k = list()
+        m = list()
+        for SAMOCHODY in kierowcy:
+            k.append(SAMOCHODY['miejsce_przebywania'])
+            m.append(SAMOCHODY['id_samochodu'])
+        w = {}
+        e = {}
+        for i in range(len(k)):
+            w[m[i]],e[m[i]] = dij.shortest_path(graph, str(k[i]), self.pier1)
+        lista = sorted(w.items(), key=lambda x: x[1])
+        lista2 = []
+        self.idkierowcy = list()
+        for elem in lista:
+            self.idkierowcy.append(int(elem[0]))
+            lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
+        self.sampleList3 = lista2
+        self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+        self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
+        self.buttonEnd1 = wx.Button(self, label="Zaakceptuj", pos=(250,170))
+        self.Bind(wx.EVT_BUTTON, self.OnClickAccept, self.buttonEnd1)
+
+    def Kierowca(self, event):
+        self.kierowca = event.GetSelection()
+        self.kierowcaID = self.idkierowcy[self.kierowca]
+
+    def OnCLickAccept(self, event):
+        if self.kierowca == '':
+            bladZlec2 = wx.MessageDialog(self, "Wybierz kierowcę", "Błąd wyboru kierowcy", wx.OK)
+            bladZlec2.ShowModal()
+            bladZlec2.Destroy()
+        else:
+            #######################################
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -158,10 +229,12 @@ class Okno(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
         
     def DodZlec(self, e):
+        self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Show()
 
     def PrzydzZlec(self, e):
+        self.panel_zlec_dodaj.Hide()
         self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
         self.panel_zlec_przydziel.Show()
     
