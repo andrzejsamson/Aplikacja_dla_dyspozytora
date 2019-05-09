@@ -46,7 +46,7 @@ class PanelOne(wx.Panel):
         wx.Panel.__init__(self, parent=parent, size=(400,100))
         self.quote = wx.StaticText(self,label="Witaj w aplikacji:", pos=(30,30))
 
-class PanelTwo(wx.Panel):
+class PanelZlecDodaj(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent, size=(400,200), pos=(0,110))
         self.miejscA = str()
@@ -103,20 +103,29 @@ class PanelTwo(wx.Panel):
             potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Potwierdzenie", wx.OK)
             potwierdzenie.ShowModal()
             potwierdzenie.Destroy()
-            self.Hide()
+            self.Destroy()
+
+class PanelZlecPrzydziel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent=parent, size=(400,200), pos=(0,110))
+        self.wiadomosc = wx.StaticText(self, label="Lista wolnych zleceń:", pos=(10, 10))
+        self.listbox = wx.ListBox(self, pos=(10, 30), size=(180, 150))
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
         wx.Frame.__init__(self,parent,title=title,size=(400,400))
         self.panel_one = PanelOne(self)
-        self.panel_two = PanelTwo(self)
-        self.panel_two.Hide()
+        self.panel_zlec_dodaj = PanelZlecDodaj(self)
+        self.panel_zlec_dodaj.Hide()
+        self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
+        self.panel_zlec_przydziel.Hide()
         self.CreateStatusBar()
 
         menubar = wx.MenuBar()
         
         menu1 = wx.Menu()
         DodajZlec = menu1.Append(wx.ID_ANY, "Dodaj", "Dodaje zlecenie")
+        PrzydzielZlec = menu1.Append(wx.ID_ANY, "Przydziel pojazd", "Przydziela kierowcę do zlecenia")
         PrzegladajZlec = menu1.Append(wx.ID_ANY, "Przegladaj", "Przeglądaj zlecenia")
 
         menubar.Append(menu1,"Zlecenia")
@@ -139,6 +148,7 @@ class Okno(wx.Frame):
         # EVENTS
 
         self.Bind(wx.EVT_MENU, self.DodZlec, DodajZlec)
+        self.Bind(wx.EVT_MENU, self.PrzydzZlec, PrzydzielZlec)
         #self.Bind(wx.EVT_MENU, self.PrzegZlec, PrzegladajZlec)
 
         #self.Bind(wx.EVT_MENU, self.DodKier, DodajKier)
@@ -148,7 +158,12 @@ class Okno(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
         
     def DodZlec(self, e):
-        self.panel_two.Show()
+        self.panel_zlec_dodaj = PanelZlecDodaj(self)
+        self.panel_zlec_dodaj.Show()
+
+    def PrzydzZlec(self, e):
+        self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
+        self.panel_zlec_przydziel.Show()
     
     def OnHelp(self, e):
         dialog = wx.MessageDialog(self, "W celu uzyskania pomocy pisz do jedrekwisniewski@wp.pl", "Okno Pomocy", wx.OK)
