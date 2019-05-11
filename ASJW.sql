@@ -1,7 +1,7 @@
 CREATE TABLE SAMOCHODY
 	(ID_samochodu INTEGER,
 	ladownosc INTEGER NOT NULL,
-	miejsce_przebywania TEXT NOT NULL,
+	miejsce_przebywania TEXT,
 	PRIMARY KEY(ID_samochodu));
 CREATE TABLE ZLECENIA
 	(ID_zlecenia INTEGER,

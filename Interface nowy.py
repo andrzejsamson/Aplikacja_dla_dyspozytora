@@ -90,6 +90,7 @@ class PanelZlecDodaj(wx.Panel):
             sql = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
             kursor.execute(sql, task)
             db.commit()
+            
             kursor.execute(
                 """
                 SELECT ID_zlecenia FROM zlecenia
@@ -109,11 +110,9 @@ class PanelZlecPrzydziel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent=parent, size=(400,200), pos=(0,110))
         self.wiadomosc = wx.StaticText(self, label="Lista wolnych zleceń:", pos=(10, 10))
-        self.listbox = wx.ListBox(self, pos=(10, 30), size=(360, 100))
-        self.Bind(wx.EVT_LISTBOX, self.skad, self.listbox)
         kursor.execute(
         """
-        SELECT ID_zlecenia, skad, dokad, masa, data_przyjscia FROM Zlecenia NATURAL JOIN Wykonania WHERE data_wykonania IS NULL ORDER BY data_przyjscia
+        SELECT ID_zlecenia, skad, dokad, masa, data_przyjscia FROM Zlecenia NATURAL JOIN Wykonania WHERE ID_samochodu IS NULL ORDER BY data_przyjscia
         """)
         wykonania = kursor.fetchall()
         self.pier = list()
@@ -126,10 +125,14 @@ class PanelZlecPrzydziel(wx.Panel):
             self.dwa.append(i['dokad'])
             self.trzy.append(i['ID_zlecenia'])
             lista.append(i['skad'] + ":" + i['dokad'] + ":" + str(i['masa']) + ":" + i['data_przyjscia'])
-        self.listbox.InsertItems(lista,0)
-
-        self.buttonPrzydziel = wx.Button(self, label="Przydziel kierowcę", pos=(10,170))
-        self.Bind(wx.EVT_BUTTON, self.PrzydzielKier, self.buttonPrzydziel)
+        if len(lista) == 0:
+            self.napis = wx.StaticText(self, label="0", pos=(150,10))
+        else:
+            self.listbox = wx.ListBox(self, pos=(10, 30), size=(360, 100))
+            self.Bind(wx.EVT_LISTBOX, self.skad, self.listbox) 
+            self.listbox.InsertItems(lista,0)
+            self.buttonPrzydziel = wx.Button(self, label="Przydziel kierowcę", pos=(10,170))
+            self.Bind(wx.EVT_BUTTON, self.PrzydzielKier, self.buttonPrzydziel)
 
     def skad(self, event):
         self.skad = self.listbox.GetSelection()
@@ -174,13 +177,31 @@ class PanelZlecPrzydziel(wx.Panel):
         self.kierowca = event.GetSelection()
         self.kierowcaID = self.idkierowcy[self.kierowca]
 
-    def OnCLickAccept(self, event):
+    def OnClickAccept(self, event):
         if self.kierowca == '':
             bladZlec2 = wx.MessageDialog(self, "Wybierz kierowcę", "Błąd wyboru kierowcy", wx.OK)
             bladZlec2.ShowModal()
             bladZlec2.Destroy()
         else:
-            #######################################
+            kursor.execute(
+                """
+                UPDATE Wykonania
+                SET ID_samochodu = ?
+                WHERE ID_zlecenia = ?
+                """, (self.kierowcaID, self.trzy1))
+            db.commit()
+            kursor.execute(
+                """
+                UPDATE Samochody
+                SET miejsce_przebywania = ?
+                WHERE ID_samochodu = ?
+                """, (None, self.kierowcaID))
+            db.commit()
+
+            potwierdzenie2 = wx.MessageDialog(self, "Przydzielono kierowcę do zlecenia", "Potwierdzenie", wx.OK)
+            potwierdzenie2.ShowModal()
+            potwierdzenie2.Destroy()
+            self.Destroy()            
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -229,12 +250,16 @@ class Okno(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
         
     def DodZlec(self, e):
-        self.panel_zlec_przydziel.Hide()
+        #self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
+        if self.panel_zlec_przydziel is not None:
+            self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Show()
 
     def PrzydzZlec(self, e):
-        self.panel_zlec_dodaj.Hide()
+        #self.panel_zlec_dodaj = PanelZlecDodaj(self)
+        if self.panel_zlec_dodaj is not None:
+            self.panel_zlec_dodaj.Hide()
         self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
         self.panel_zlec_przydziel.Show()
     
@@ -244,6 +269,7 @@ class Okno(wx.Frame):
         dialog.Destroy()
         
     def OnExit(self,e):
+        db.close()
         self.Close()
         
 app = wx.App(False)
