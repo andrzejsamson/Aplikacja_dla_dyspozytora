@@ -4,6 +4,8 @@ from collections import defaultdict, deque
 import sqlite3
 from datetime import datetime
 import dijkstra as dij
+from datetime import datetime
+from datetime import timedelta
 
 graph = dij.Graph()
 db = sqlite3.connect('ASJW.db')
@@ -104,7 +106,7 @@ class PanelZlecDodaj(wx.Panel):
             potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Potwierdzenie", wx.OK)
             potwierdzenie.ShowModal()
             potwierdzenie.Destroy()
-            self.Destroy()
+            self.Hide()
 
 class PanelZlecPrzydziel(wx.Panel):
     def __init__(self, parent):
@@ -164,8 +166,10 @@ class PanelZlecPrzydziel(wx.Panel):
         lista = sorted(w.items(), key=lambda x: x[1])
         lista2 = []
         self.idkierowcy = list()
+        self.czas = list()
         for elem in lista:
             self.idkierowcy.append(int(elem[0]))
+            self.czas.append(int(elem[1]))
             lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
         self.sampleList3 = lista2
         self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
@@ -176,6 +180,7 @@ class PanelZlecPrzydziel(wx.Panel):
     def Kierowca(self, event):
         self.kierowca = event.GetSelection()
         self.kierowcaID = self.idkierowcy[self.kierowca]
+        self.podroz = self.czas[self.kierowca]
 
     def OnClickAccept(self, event):
         if self.kierowca == '':
@@ -197,11 +202,21 @@ class PanelZlecPrzydziel(wx.Panel):
                 WHERE ID_samochodu = ?
                 """, (None, self.kierowcaID))
             db.commit()
+            czas_podrozy, droga = dij.shortest_path(graph, self.pier1, self.dwa1)
+            czas_podrozy2 = czas_podrozy + self.podroz + 30
+            data_wyk = datetime.now() + timedelta(minutes=czas_podrozy2)
+            kursor.execute(
+                """
+                UPDATE Wykonania
+                SET data_wykonania = ?
+                WHERE ID_samochodu = ?
+                """, (data_wyk,self.kierowcaID))
+            db.commit()
 
             potwierdzenie2 = wx.MessageDialog(self, "Przydzielono kierowcę do zlecenia", "Potwierdzenie", wx.OK)
             potwierdzenie2.ShowModal()
             potwierdzenie2.Destroy()
-            self.Destroy()            
+            self.Hide()            
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -237,7 +252,13 @@ class Okno(wx.Frame):
         menubar.Append(menu3,"Opcje")
         self.SetMenuBar(menubar)
 
-        # EVENTS
+        #TIMER REFRESH
+
+        self.timer = wx.Timer(self)
+        self.Bind(wx.EVT_TIMER, self.OnRefresh)
+        self.timer.Start(6000)
+
+        #EVENTS
 
         self.Bind(wx.EVT_MENU, self.DodZlec, DodajZlec)
         self.Bind(wx.EVT_MENU, self.PrzydzZlec, PrzydzielZlec)
@@ -248,18 +269,21 @@ class Okno(wx.Frame):
         
         self.Bind(wx.EVT_MENU, self.OnHelp, Pomoc)
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
+
+    def OnRefresh(self, e):
+        kursor.execute(
+            """
+            SELECT samochody.ID_samochodu, data_wykonania FROM Samochody NATURAL JOIN Wykonania GROUP BY samochody.ID_samochodu
+            """)
+        print('*')
         
     def DodZlec(self, e):
-        #self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
-        if self.panel_zlec_przydziel is not None:
-            self.panel_zlec_przydziel.Hide()
+        self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Show()
 
     def PrzydzZlec(self, e):
-        #self.panel_zlec_dodaj = PanelZlecDodaj(self)
-        if self.panel_zlec_dodaj is not None:
-            self.panel_zlec_dodaj.Hide()
+        self.panel_zlec_dodaj.Hide()
         self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
         self.panel_zlec_przydziel.Show()
     
