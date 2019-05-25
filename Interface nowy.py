@@ -4,7 +4,7 @@ from collections import defaultdict, deque
 import sqlite3
 from datetime import datetime
 import dijkstra as dij
-from datetime import datetime
+from datetime import datetime, date
 from datetime import timedelta
 
 graph = dij.Graph()
@@ -204,13 +204,13 @@ class PanelZlecPrzydziel(wx.Panel):
             db.commit()
             czas_podrozy, droga = dij.shortest_path(graph, self.pier1, self.dwa1)
             czas_podrozy2 = czas_podrozy + self.podroz + 30
-            data_wyk = datetime.now() + timedelta(minutes=czas_podrozy2)
+            data_wyk = datetime.now() + timedelta(seconds=czas_podrozy2)
             kursor.execute(
                 """
                 UPDATE Wykonania
                 SET data_wykonania = ?
-                WHERE ID_samochodu = ?
-                """, (data_wyk,self.kierowcaID))
+                WHERE ID_zlecenia = ?
+                """, (data_wyk,self.trzy1))
             db.commit()
 
             potwierdzenie2 = wx.MessageDialog(self, "Przydzielono kierowcę do zlecenia", "Potwierdzenie", wx.OK)
@@ -273,9 +273,36 @@ class Okno(wx.Frame):
     def OnRefresh(self, e):
         kursor.execute(
             """
-            SELECT samochody.ID_samochodu, data_wykonania FROM Samochody NATURAL JOIN Wykonania GROUP BY samochody.ID_samochodu
+            SELECT samochody.ID_samochodu, MAX(data_wykonania), dokad FROM Samochody NATURAL JOIN (Wykonania NATURAL JOIN Zlecenia) GROUP BY samochody.ID_samochodu
             """)
-        print('*')
+        daty_wykon = kursor.fetchall()
+        auto = list()
+        datawyk = list()
+        cel = list()
+        for DATY in daty_wykon:
+            auto.append(DATY['ID_samochodu'])
+            datawyk.append(DATY['MAX(data_wykonania)'])
+            cel.append(DATY['dokad'])
+        kursor.execute(
+            """
+            SELECT datetime('now', 'localtime')
+            """)
+        teraz = kursor.fetchall()
+        teraz2 = list()
+        for TERAZ3 in teraz:
+            teraz2.append(TERAZ3["datetime('now', 'localtime')"])
+        for (p,q,r) in zip(auto,datawyk,cel):
+            if q < teraz2[0]:
+                kursor.execute(
+                    """
+                    UPDATE Samochody
+                    SET miejsce_przebywania = ?
+                    WHERE ID_samochodu = ?
+                    """, (r,p))
+                db.commit()
+            else:
+                print('*')
+        print('elo')
         
     def DodZlec(self, e):
         self.panel_zlec_przydziel.Hide()
@@ -300,37 +327,3 @@ app = wx.App(False)
 frame = Okno(None, "Aplikacja dyspozytora")
 frame.Show()
 app.MainLoop()
-
-'''
-self.par1 = wx.StaticText(self, label="%s" %self.miejscA, pos=(150, 40))
-            self.par2 = wx.StaticText(self, label="%s" %self.miejscB, pos=(150, 70))
-            self.par3 = wx.StaticText(self, label="%s" %self.ciezar, pos=(150, 100))
-            self.lblhear4 = wx.StaticText(self, label="Lista kierowcow:", pos=(10,130))
-
-            kursor.execute(
-                """
-                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
-                """)
-            kierowcy = kursor.fetchall()
-            k = list()
-            m = list()
-            for SAMOCHODY in kierowcy:
-                k.append(SAMOCHODY['miejsce_przebywania'])
-                m.append(SAMOCHODY['id_samochodu'])
-            w = {}
-            e = {}
-            for i in range(len(k)):
-                w[m[i]],e[m[i]] = dij.shortest_path(graph, str(k[i]), self.miejscA)
-            lista = sorted(w.items(), key=lambda x: x[1])
-            lista2 = []
-            for elem in lista:
-                lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
-            self.sampleList3 = lista2
-            self.edithear4 = wx.ComboBox(self, pos=(150,130), choices=self.sampleList3, style=wx.CB_DROPDOWN)
-            self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
-            self.buttonEnd1 = wx.Button(self, label="Accept", pos=(250,170))
-            #self.Bind(wx.EVT_BUTTON, self.OnClickAccept, self.buttonEnd1)
-
-    def Kierowca(self, event):
-        self.kierowca = event.GetString()
-'''

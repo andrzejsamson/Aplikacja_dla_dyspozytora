@@ -63,18 +63,3 @@ def shortest_path(graph, origin, destination):
         full_path.append(destination)
     
         return int(visited[destination]), list(full_path)
-'''
-def dodaj_zlecenie():
-    print("Podaj skąd: ")
-    skad = input()
-    print("Podaj dokąd: ")
-    dokad = input()
-    print("Podaj masa: ")
-    masa = input()
-    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    task = (skad, dokad, masa, now)
-    sql = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
-    kursor.execute(sql, task)
-    print(shortest_path(graph, skad, dokad))
-    return kierowcy(skad)
-'''
