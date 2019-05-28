@@ -7,6 +7,7 @@ from datetime import datetime
 import dijkstra as dij
 from datetime import datetime, date
 from datetime import timedelta
+import time
 
 graph = dij.Graph()
 db = sqlite3.connect('ASJW.db')
@@ -65,12 +66,12 @@ class PanelZlecDodaj(wx.Panel):
         self.sampleList = newzbior
         self.lblhear1 = wx.StaticText(self, label="Miejscowosc poczatkowa:", pos=(10, 80))
         self.lblhear1.SetFont(font)
-        self.edithear1 = wx.ComboBox(self, pos=(350, 80), choices=self.sampleList, style=wx.CB_DROPDOWN)
+        self.edithear1 = wx.ComboBox(self, pos=(350, 80), size=(150,30), choices=self.sampleList, style=wx.CB_DROPDOWN)
         self.edithear1.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.MiejscA, self.edithear1)
         self.lblhear2 = wx.StaticText(self, label="Miejscowosc koncowa:", pos=(10, 140))
         self.lblhear2.SetFont(font)
-        self.edithear2 = wx.ComboBox(self, pos=(350, 140), choices=self.sampleList, style=wx.CB_DROPDOWN)
+        self.edithear2 = wx.ComboBox(self, pos=(350, 140), size=(150,30), choices=self.sampleList, style=wx.CB_DROPDOWN)
         self.edithear2.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.MiejscB, self.edithear2)
         waga = ['100', '200', '300', '400', '500', '600', '700', '800', '900', '1000']
@@ -83,6 +84,9 @@ class PanelZlecDodaj(wx.Panel):
         self.buttonZlec = wx.Button(self, label="Dodaj", pos=(600,340))
         self.buttonZlec.SetFont(font2)
         self.Bind(wx.EVT_BUTTON, self.OnClickZlec, self.buttonZlec)
+        self.buttonZlec2 = wx.Button(self, label="Wyjdź", pos=(500,340))
+        self.buttonZlec2.SetFont(font2)
+        self.Bind(wx.EVT_BUTTON, self.wyjdz, self.buttonZlec2)
 
     def MiejscA(self, event):
         self.miejscA = event.GetString()
@@ -116,10 +120,11 @@ class PanelZlecDodaj(wx.Panel):
             sql2 = """ INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,NULL,NULL) """
             kursor.execute(sql2, aktualne)
             db.commit()
-            potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Potwierdzenie", wx.OK)
-            potwierdzenie.ShowModal()
-            potwierdzenie.Destroy()
-            self.Hide()
+            self.potwierdzenie = wx.StaticText(self, label="Dodano zlecenie do bazy...", pos=(10, 260))
+            self.potwierdzenie.Hide()
+
+    def wyjdz(self, e):
+        self.Hide()
 
 class PanelZlecPrzydziel(wx.Panel):
     def __init__(self, parent):
@@ -142,7 +147,7 @@ class PanelZlecPrzydziel(wx.Panel):
             self.pier.append(i['skad'])
             self.dwa.append(i['dokad'])
             self.trzy.append(i['ID_zlecenia'])
-            lista.append(i['skad'] + ":" + i['dokad'] + ":" + str(i['masa']) + ":" + i['data_przyjscia'])
+            lista.append(i['skad'] + ":" + i['dokad'] + " - " + str(i['masa']) + " - " + i['data_przyjscia'])
         if len(lista) == 0:
             self.napis = wx.StaticText(self, label="0", pos=(250,10))
             self.napis.SetFont(font)
@@ -197,7 +202,7 @@ class PanelZlecPrzydziel(wx.Panel):
             self.czas.append(int(elem[1]))
             lista2.append(str(elem[0]) + "::" + str(elem[1]) + "min")
         self.sampleList3 = lista2
-        self.edithear4 = wx.ComboBox(self, pos=(350,200), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+        self.edithear4 = wx.ComboBox(self, pos=(350,200), size=(150,30), choices=self.sampleList3, style=wx.CB_DROPDOWN)
         self.edithear4.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.Kierowca, self.edithear4)
         self.buttonEnd1 = wx.Button(self, label="Zaakceptuj", pos=(600,340), size=(150,30))
@@ -334,7 +339,7 @@ class Okno(wx.Frame):
         self.SetMenuBar(menubar)
         
         menu2 = wx.Menu()
-        DodajKier = menu2.Append(wx.ID_ANY, "Dodaj", "Dodaje kierowców")
+        #DodajKier = menu2.Append(wx.ID_ANY, "Dodaj", "Dodaje kierowców")
         PrzegladajKier = menu2.Append(wx.ID_ANY, "Przegladaj", "Przeglądaj kierowców")
 
         menubar.Append(menu2,"Kierowcy")
