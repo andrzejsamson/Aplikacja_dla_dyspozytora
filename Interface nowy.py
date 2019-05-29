@@ -47,14 +47,14 @@ newzbior.remove('F')
 
 class PanelOne(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent, size=(800,100))
+        wx.Panel.__init__(self, parent=parent, size=(900,100))
         self.quote = wx.StaticText(self,label="Witaj w aplikacji:", pos=(35,30))
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.quote.SetFont(font)
 
 class PanelZlecDodaj(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent, size=(800,500), pos=(0,110))
+        wx.Panel.__init__(self, parent=parent, size=(900,500), pos=(0,110))
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.miejscA = str()
@@ -74,11 +74,11 @@ class PanelZlecDodaj(wx.Panel):
         self.edithear2 = wx.ComboBox(self, pos=(350, 140), size=(150,30), choices=self.sampleList, style=wx.CB_DROPDOWN)
         self.edithear2.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.MiejscB, self.edithear2)
-        waga = ['100', '200', '300', '400', '500', '600', '700', '800', '900', '1000']
+        waga = ['100 [kg]', '200 [kg]', '300 [kg]', '400 [kg]', '500 [kg]', '600 [kg]', '700 [kg]', '800 [kg]', '900 [kg]', '1000 [kg]']
         self.sampleList2 = waga
         self.lblhear3 = wx.StaticText(self, label="Waga:", pos=(10, 200))
         self.lblhear3.SetFont(font)
-        self.edithear3 = wx.ComboBox(self, pos=(350, 200), choices=self.sampleList2, style=wx.CB_DROPDOWN)
+        self.edithear3 = wx.ComboBox(self, pos=(350, 200), size=(100,30), choices=self.sampleList2, style=wx.CB_DROPDOWN)
         self.edithear3.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.Ciezar, self.edithear3)
         self.buttonZlec = wx.Button(self, label="Dodaj", pos=(600,340))
@@ -120,15 +120,16 @@ class PanelZlecDodaj(wx.Panel):
             sql2 = """ INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,NULL,NULL) """
             kursor.execute(sql2, aktualne)
             db.commit()
-            self.potwierdzenie = wx.StaticText(self, label="Dodano zlecenie do bazy...", pos=(10, 260))
-            self.potwierdzenie.Hide()
+            self.potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Dodanie zlecenia", wx.OK)
+            self.potwierdzenie.ShowModal()
+            self.potwierdzenie.Destroy()
 
     def wyjdz(self, e):
         self.Hide()
 
 class PanelZlecPrzydziel(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent=parent, size=(800,500), pos=(0,110))
+        wx.Panel.__init__(self, parent=parent, size=(900,500), pos=(0,110))
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.wiadomosc = wx.StaticText(self, label="Lista wolnych zleceń:", pos=(10, 10))
@@ -252,14 +253,14 @@ class PanelZlecPrzydziel(wx.Panel):
 
 class PanelZlecPrzegladaj(wx.Panel):
     def __init__ (self, parent):
-        wx.Panel.__init__(self, parent=parent, size=(800,500), pos=(0,110))
+        wx.Panel.__init__(self, parent=parent, size=(900,500), pos=(0,110))
         font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
         self.wiadomosc = wx.StaticText(self, label="Lista zleceń:", pos=(10, 10))
         self.wiadomosc.SetFont(font)
         kursor.execute(
             """
-            SELECT samochody.ID_samochodu, ID_zlecenia, skad, dokad, masa, data_przyjscia, data_wykonania FROM Samochody NATURAL JOIN (Wykonania NATURAL JOIN Zlecenia)
+            SELECT samochody.ID_samochodu, ID_zlecenia, skad, dokad, masa, data_przyjscia, data_wykonania, status FROM Samochody NATURAL JOIN ((Zakonczenia NATURAL JOIN Wykonania) NATURAL JOIN Zlecenia)
             """)
         przeglad = kursor.fetchall()
         sam = list()
@@ -269,6 +270,7 @@ class PanelZlecPrzegladaj(wx.Panel):
         mas = list()
         dat_p = list()
         dat_w = list()
+        status = list()
         for p in przeglad:
             sam.append(p['ID_samochodu'])
             zle.append(p['ID_zlecenia'])
@@ -277,8 +279,9 @@ class PanelZlecPrzegladaj(wx.Panel):
             mas.append(p['masa'])
             dat_p.append(p['data_przyjscia'])
             dat_w.append(p['data_wykonania'])
-        self.grid1 = grid.Grid(self, pos=(10, 60), size=(770,350))
-        self.grid1.CreateGrid(len(sam), 7)
+            status.append(p['status'])
+        self.grid1 = grid.Grid(self, pos=(10, 60), size=(870,350))
+        self.grid1.CreateGrid(len(sam), 8)
 
         self.grid1.SetColLabelValue(0, "ID Zlecenia")
         self.grid1.SetColLabelValue(1, "Data przyjścia")
@@ -287,6 +290,7 @@ class PanelZlecPrzegladaj(wx.Panel):
         self.grid1.SetColLabelValue(4, "Masa [kg]")
         self.grid1.SetColLabelValue(5, "Kierowca")
         self.grid1.SetColLabelValue(6, "Data zakończenia")
+        self.grid1.SetColLabelValue(7, "Status")
 
         for i in range(len(sam)):
             self.grid1.SetCellValue(i,0, str(zle[i]))
@@ -303,6 +307,8 @@ class PanelZlecPrzegladaj(wx.Panel):
             self.grid1.SetReadOnly(i,5, True)
             self.grid1.SetCellValue(i,6, dat_w[i])
             self.grid1.SetReadOnly(i,6, True)
+            self.grid1.SetCellValue(i,7, status[i])
+            self.grid1.SetReadOnly(i,7, True)
 
         self.grid1.AutoSizeColumns(True)
         self.grid1.AutoSizeRows(True)
@@ -318,7 +324,7 @@ class PanelZlecPrzegladaj(wx.Panel):
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
-        wx.Frame.__init__(self,parent,title=title,size=(810,700))
+        wx.Frame.__init__(self,parent,title=title,size=(910,700))
         self.panel_one = PanelOne(self)
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Hide()
@@ -413,8 +419,8 @@ class Okno(wx.Frame):
                 if s in zakoncz:
                     continue
                 else:
-                    sql4 = """ INSERT INTO Zakonczenia(data_zakonczenia, ID_wykonania) VALUES(?,?) """
-                    task4 = (q, s)
+                    sql4 = """ INSERT INTO Zakonczenia(data_zakonczenia, ID_wykonania, status) VALUES(?,?,?) """
+                    task4 = (q, s, 'pomyślne')
                     kursor.execute(sql4, task4)
                     db.commit()
             else:
