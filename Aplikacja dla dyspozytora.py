@@ -74,7 +74,7 @@ class PanelZlecDodaj(wx.Panel):
         self.edithear2 = wx.ComboBox(self, pos=(350, 140), size=(150,30), choices=self.sampleList, style=wx.CB_DROPDOWN)
         self.edithear2.SetFont(font2)
         self.Bind(wx.EVT_COMBOBOX, self.MiejscB, self.edithear2)
-        waga = ['100 [kg]', '200 [kg]', '300 [kg]', '400 [kg]', '500 [kg]', '600 [kg]', '700 [kg]', '800 [kg]', '900 [kg]', '1000 [kg]']
+        waga = ['0 [kg]', '100 [kg]', '200 [kg]', '300 [kg]', '400 [kg]', '500 [kg]', '600 [kg]', '700 [kg]', '800 [kg]', '900 [kg]', '1000 [kg]']
         self.sampleList2 = waga
         self.lblhear3 = wx.StaticText(self, label="Waga:", pos=(10, 200))
         self.lblhear3.SetFont(font)
@@ -103,7 +103,6 @@ class PanelZlecDodaj(wx.Panel):
             bladZlec.ShowModal()
             bladZlec.Destroy()
         else:
-            # można dodać info czy jestes pewny
             now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             task = (self.miejscA, self.miejscB, self.ciezar, now)
             sql = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
@@ -182,7 +181,7 @@ class PanelZlecPrzydziel(wx.Panel):
         self.par2.SetFont(font)
         kursor.execute(
                 """
-                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT NULL
+                SELECT id_samochodu, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT "w trasie"
                 """)
         kierowcy = kursor.fetchall()
         k = list()
@@ -233,7 +232,7 @@ class PanelZlecPrzydziel(wx.Panel):
                 UPDATE Samochody
                 SET miejsce_przebywania = ?
                 WHERE ID_samochodu = ?
-                """, (None, self.kierowcaID))
+                """, ("w trasie", self.kierowcaID))
             db.commit()
             czas_podrozy, droga = dij.shortest_path(graph, self.pier1, self.dwa1)
             czas_podrozy2 = czas_podrozy + self.podroz + 30
@@ -321,6 +320,205 @@ class PanelZlecPrzegladaj(wx.Panel):
 
     def zakprzeg(self, e):
         self.Hide()
+
+class PanelKier(wx.Panel):
+    def __init__(self,parent):
+        wx.Panel.__init__(self, parent=parent, size=(900,500), pos=(0,110))
+        font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.miejscow = str()
+        self.przycz = str()
+        self.wiadomosc2 = wx.StaticText(self, label="Lista kierowców:", pos=(10, 10))
+        self.wiadomosc2.SetFont(font)
+        kursor.execute(
+            """
+            SELECT samochody.ID_samochodu, ladownosc, miejsce_przebywania, skad, dokad, ID_wykonania, MAX(data_wykonania) FROM Samochody NATURAL JOIN (Wykonania NATURAL JOIN Zlecenia)
+            WHERE miejsce_przebywania IS "w trasie" GROUP BY samochody.ID_samochodu
+            """)
+        przeg_kier = kursor.fetchall()
+        self.samo = list()
+        self.lad = list()
+        self.miej_przeb = list()
+        self.skad = list()
+        self.dokad = list()
+        self.wyk = list()
+        razem = list()
+        for t in przeg_kier:
+            self.samo.append(t['ID_samochodu'])
+            self.lad.append(t['ladownosc'])
+            self.miej_przeb.append(t['miejsce_przebywania'])
+            self.skad.append(t['skad'])
+            self.dokad.append(t['dokad'])
+            self.wyk.append(t['ID_wykonania'])
+
+        kursor.execute(
+            """
+            SELECT id_samochodu, ladownosc, miejsce_przebywania FROM SAMOCHODY WHERE miejsce_przebywania IS NOT "w trasie"
+            """)
+        kierowcy2 = kursor.fetchall()
+        for SAMOCHODY in kierowcy2:
+            self.samo.append(SAMOCHODY['id_samochodu'])
+            self.lad.append(SAMOCHODY['ladownosc'])
+            self.miej_przeb.append(SAMOCHODY['miejsce_przebywania'])
+            self.skad.append(' ')
+            self.dokad.append(' ')
+            self.wyk.append(' ')
+        for i in range(len(self.samo)):
+            razem.append(str(self.samo[i]) + " :: " + str(self.lad[i]) + " :: " + str(self.miej_przeb[i]) + " :: " + str(self.skad[i]) + " --> " + str(self.dokad[i]))
+        self.listbox2 = wx.ListBox(self, pos=(10, 60), size=(770, 320))
+        self.listbox2.SetFont(font2)
+        self.Bind(wx.EVT_LISTBOX, self.odwolaj, self.listbox2)
+        self.listbox2.InsertItems(razem,0)
+        self.buttonOdwolaj = wx.Button(self, label="Odwołaj kierowcę", pos=(10,430), size=(150,30))
+        self.buttonOdwolaj.SetFont(font2)
+        self.Bind(wx.EVT_BUTTON, self.odwolaj_kier, self.buttonOdwolaj)
+        self.buttonDodaj = wx.Button(self, label="Dodaj kierowcę", pos=(180,430), size=(150,30))
+        self.buttonDodaj.SetFont(font2)
+        self.Bind(wx.EVT_BUTTON, self.dodaj_kier, self.buttonDodaj)
+
+    def dodaj_kier(self, event):
+        sql6 = """ INSERT INTO Samochody(ladownosc, miejsce_przebywania) VALUES(?,?) """
+        task6 = (1000, "Łódź")
+        kursor.execute(sql6, task6)
+        db.commit()
+        dialog3 = wx.MessageDialog(self, "Dodano kierowcę do bazy", "Okno informacji", wx.OK)
+        dialog3.ShowModal()
+        dialog3.Destroy()
+        self.Hide()
+
+    def odwolaj(self, event):
+        self.odwolaj = self.listbox2.GetSelection()
+        self.samochod = self.samo[self.odwolaj]
+        self.wykonania = self.wyk[self.odwolaj]
+
+    def odwolaj_kier(self, e):
+        font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.wiadomosc2.Hide()
+        self.listbox2.Hide()
+        self.buttonDodaj.Hide()
+        self.buttonOdwolaj.Hide()
+        self.wiadomosc2 = wx.StaticText(self, label="Odwoływanie kierowcy:", pos=(10, 10))
+        self.wiadomosc2.SetFont(font)
+        self.sampleList2 = newzbior
+        self.lblhear7 = wx.StaticText(self, label="Miejscowosc kierowcy:", pos=(10, 80))
+        self.lblhear7.SetFont(font)
+        self.edithear7 = wx.ComboBox(self, pos=(350, 80), size=(150,30), choices=self.sampleList2, style=wx.CB_DROPDOWN)
+        self.edithear7.SetFont(font2)
+        self.Bind(wx.EVT_COMBOBOX, self.miejsc, self.edithear7)
+        self.sampleList3 = ['awaria', 'powrót', 'inne']
+        self.lblhear8 = wx.StaticText(self, label="Przyczyna:", pos=(10, 140))
+        self.lblhear8.SetFont(font)
+        self.edithear8 = wx.ComboBox(self, pos=(350, 140), size=(150,30), choices=self.sampleList3, style=wx.CB_DROPDOWN)
+        self.edithear8.SetFont(font2)
+        self.Bind(wx.EVT_COMBOBOX, self.przyczyna, self.edithear8)
+        self.buttonPowrot = wx.Button(self, label="Odwołaj", pos=(450,200), size=(150,30))
+        self.buttonPowrot.SetFont(font2)
+        self.Bind(wx.EVT_BUTTON, self.powrot, self.buttonPowrot)
+
+    def miejsc(self, event):
+        self.miejscow = event.GetString()
+
+    def przyczyna(self, event):
+        self.przycz = event.GetString()
+
+    def powrot(self, event):
+        if self.wykonania == ' ':
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            taskk1 = (self.miejscow, "Łódź", "0 [kg]", now)
+            sql8 = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
+            kursor.execute(sql8, taskk1)
+            db.commit()
+            kursor.execute(
+                """
+                SELECT ID_zlecenia FROM zlecenia
+                """)
+            zlecenia2 = kursor.fetchall()
+            for d in zlecenia2:
+                aktualne2 = d['ID_zlecenia']
+            w,e = dij.shortest_path(graph, self.miejscow, "Łódź")
+            self.data_w = datetime.now() + timedelta(seconds=w)
+            kursor.execute(
+                """
+                INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,?,?)
+                """, (aktualne2, self.samochod, self.data_w))
+            db.commit()
+            kursor.execute(
+                """
+                UPDATE Samochody
+                SET miejsce_przebywania = ?
+                WHERE ID_samochodu = ?
+                """, ("w trasie", self.samochod))
+            db.commit()
+            self.Hide()
+        else:
+            self.data_wy = datetime.now()
+            sql10 = """ INSERT INTO Zakonczenia(data_zakonczenia, ID_wykonania, status) VALUES(?,?,?) """
+            task10 = (self.data_wy, self.wykonania, self.przycz)
+            kursor.execute(sql10, task10)
+            db.commit()
+
+            kursor.execute(
+                """
+                SELECT skad, dokad, masa, data_przyjscia, ID_wykonania FROM Zlecenia NATURAL JOIN Wykonania
+                """)
+            zlec_wyk = kursor.fetchall()
+            s = list()
+            d = list()
+            mas = list()
+            dat = list()
+            wyk_on = list()
+            for v in zlec_wyk:
+                s.append(v['skad'])
+                d.append(v['dokad'])
+                mas.append(v['masa'])
+                dat.append(v['data_przyjscia'])
+                wyk_on.append(v['ID_wykonania'])
+            for (a,b,c,d,e) in zip(s,d,mas,dat,wyk_on):
+                if e == self.wykonania:
+                    kursor.execute(
+                        """
+                        INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?)
+                        """, (a,b,c,d))
+                    db.commit()
+                    kursor.execute(
+                        """
+                        SELECT ID_zlecenia FROM zlecenia
+                        """)
+                    zlecen = kursor.fetchall()
+                    for x in zlecen:
+                        aktualne3 = x
+                    sql2 = """ INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,NULL,NULL) """
+                    kursor.execute(sql2, aktualne3)
+                    db.commit()
+            
+            now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            taskk1 = (self.miejscow, "Łódź", "0 [kg]", now)
+            sql8 = """ INSERT INTO Zlecenia(skad,dokad,masa,data_przyjscia) VALUES(?,?,?,?) """
+            kursor.execute(sql8, taskk1)
+            db.commit()
+            kursor.execute(
+                """
+                SELECT ID_zlecenia FROM zlecenia
+                """)
+            zlecenia2 = kursor.fetchall()
+            for d in zlecenia2:
+                aktualne2 = d['ID_zlecenia']
+            w,e = dij.shortest_path(graph, self.miejscow, "Łódź")
+            self.data_w = datetime.now() + timedelta(seconds=w)
+            kursor.execute(
+                """
+                INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,?,?)
+                """, (aktualne2, self.samochod, self.data_w))
+            db.commit()
+            kursor.execute(
+                """
+                UPDATE Samochody
+                SET miejsce_przebywania = ?
+                WHERE ID_samochodu = ?
+                """, ("w trasie", self.samochod))
+            db.commit()
+            self.Hide()
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -332,6 +530,8 @@ class Okno(wx.Frame):
         self.panel_zlec_przydziel.Hide()
         self.panel_zlec_przegladaj = PanelZlecPrzegladaj(self)
         self.panel_zlec_przegladaj.Hide()
+        self.panel_kier = PanelKier(self)
+        self.panel_kier.Hide()
         self.CreateStatusBar()
 
         menubar = wx.MenuBar()
@@ -371,7 +571,7 @@ class Okno(wx.Frame):
         self.Bind(wx.EVT_MENU, self.PrzegZlec, PrzegladajZlec)
 
         #self.Bind(wx.EVT_MENU, self.DodKier, DodajKier)
-        #self.Bind(wx.EVT_MENU, self.PrzegKier, PrzegladajKier)
+        self.Bind(wx.EVT_MENU, self.PrzegKier, PrzegladajKier)
         
         self.Bind(wx.EVT_MENU, self.OnHelp, Pomoc)
         self.Bind(wx.EVT_MENU, self.OnExit, Wyjscie)
@@ -425,25 +625,35 @@ class Okno(wx.Frame):
                     db.commit()
             else:
                 print('*')
-        print('elo')
+        print('Refresh')
         
     def DodZlec(self, e):
         self.panel_zlec_przegladaj.Hide()
         self.panel_zlec_przydziel.Hide()
+        self.panel_kier.Hide()
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Show()
 
     def PrzydzZlec(self, e):
         self.panel_zlec_przegladaj.Hide()
         self.panel_zlec_dodaj.Hide()
+        self.panel_kier.Hide()
         self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
         self.panel_zlec_przydziel.Show()
 
     def PrzegZlec(self, e):
         self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj.Hide()
+        self.panel_kier.Hide()
         self.panel_zlec_przegladaj = PanelZlecPrzegladaj(self)
         self.panel_zlec_przegladaj.Show()
+
+    def PrzegKier(self, e):
+        self.panel_zlec_przydziel.Hide()
+        self.panel_zlec_dodaj.Hide()
+        self.panel_zlec_przegladaj.Hide()
+        self.panel_kier = PanelKier(self)
+        self.panel_kier.Show()
     
     def OnHelp(self, e):
         dialog = wx.MessageDialog(self, "W celu uzyskania pomocy pisz do jedrekwisniewski@wp.pl", "Okno Pomocy", wx.OK)
