@@ -80,6 +80,7 @@ class PanelZlecDodaj(wx.Panel):
         self.lblhear3.SetFont(font)
         self.edithear3 = wx.ComboBox(self, pos=(350, 200), size=(100,30), choices=self.sampleList2, style=wx.CB_DROPDOWN)
         self.edithear3.SetFont(font2)
+        self.wiad = wx.ListBox(self, pos=(10, 260), size=(400, 60))
         self.Bind(wx.EVT_COMBOBOX, self.Ciezar, self.edithear3)
         self.buttonZlec = wx.Button(self, label="Dodaj", pos=(600,340))
         self.buttonZlec.SetFont(font2)
@@ -119,9 +120,7 @@ class PanelZlecDodaj(wx.Panel):
             sql2 = """ INSERT INTO Wykonania(ID_zlecenia,ID_samochodu,data_wykonania) VALUES(?,NULL,NULL) """
             kursor.execute(sql2, aktualne)
             db.commit()
-            self.potwierdzenie = wx.MessageDialog(self, "Dodano zlecenie do bazy", "Dodanie zlecenia", wx.OK)
-            self.potwierdzenie.ShowModal()
-            self.potwierdzenie.Destroy()
+            self.wiad.Append("Dodano zlecenie do bazy")
 
     def wyjdz(self, e):
         self.Hide()
@@ -519,6 +518,30 @@ class PanelKier(wx.Panel):
                 """, ("w trasie", self.samochod))
             db.commit()
             self.Hide()
+
+class PanelOpcje(wx.Panel):
+    def __init__ (self, parent):
+        wx.Panel.__init__(self, parent=parent, size=(900,500), pos=(0,110))
+        font = wx.Font(10, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        font2 = wx.Font(12, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+        self.wiad = wx.StaticText(self, pos=(30, 30), label="""Aplikacja dla dyspozytora\n\nWitaj w dziale pomocy!\n
+    1. Aby dodać zlecenie należy wejść w zakładkę 'Zlecenia', a następnie wybrać 'dodaj'. Następnie należy wybrać skąd, dokąd
+       oraz jaką masę ma przewieźć kierowca. Po kliknięciu przycisku zostanie dodane zlecenie do bazy.\n
+    2. Aby przydzielić kierowcę do zlecenia należy otworzyć zakładkę 'Zlecenia', a następnie wybrać 'Przydziel pojazd'.
+       Następnie należy z listy wybrać zlecenie i kliknąć przycisk. Z listy trzeba wybrać kierowcę do zlecenia. Kierowcy
+       ułożą się w kolejności od tego, któy ma najbliżej do miejscowości początkowej.\n
+    3. Otwierając zakładkę 'Zlecenia' - 'Przegladaj' można zobaczyć informacje na temat zakończonych zleceń.\n
+    4. Po wybraniu zakładki 'Kierowcy' - 'Przegladaj' otrzymamy informację na temat kierowców - gdzie są i czy mają zlecenie.
+       Wybierając danego kierowcę można go odwołać lub wrócić do bazy po podaniu miejscowości, w której się aktualnie znajduje
+       oraz wybraniu przyczyny (awaria, powrót lub inne).\n
+    5. Klikając 'Opcje' - 'Zamknij' zamykana zostaje baza danych i aplikacja.""")
+        self.wiad.SetFont(font)
+        self.buttonWroc = wx.Button(self, label="Wróć", pos=(450,400), size=(150,30))
+        self.buttonWroc.SetFont(font2)
+        self.Bind(wx.EVT_BUTTON, self.wroc, self.buttonWroc)
+
+    def wroc(self, e):
+        self.Hide()
         
 class Okno(wx.Frame):
     def __init__(self,parent,title):
@@ -532,6 +555,8 @@ class Okno(wx.Frame):
         self.panel_zlec_przegladaj.Hide()
         self.panel_kier = PanelKier(self)
         self.panel_kier.Hide()
+        self.panel_opcje = PanelOpcje(self)
+        self.panel_opcje.Hide()
         self.CreateStatusBar()
 
         menubar = wx.MenuBar()
@@ -562,7 +587,7 @@ class Okno(wx.Frame):
 
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self.OnRefresh)
-        self.timer.Start(10000)
+        self.timer.Start(5000)
 
         #EVENTS
 
@@ -631,6 +656,7 @@ class Okno(wx.Frame):
         self.panel_zlec_przegladaj.Hide()
         self.panel_zlec_przydziel.Hide()
         self.panel_kier.Hide()
+        self.panel_opcje.Hide()
         self.panel_zlec_dodaj = PanelZlecDodaj(self)
         self.panel_zlec_dodaj.Show()
 
@@ -638,6 +664,7 @@ class Okno(wx.Frame):
         self.panel_zlec_przegladaj.Hide()
         self.panel_zlec_dodaj.Hide()
         self.panel_kier.Hide()
+        self.panel_opcje.Hide()
         self.panel_zlec_przydziel = PanelZlecPrzydziel(self)
         self.panel_zlec_przydziel.Show()
 
@@ -645,6 +672,7 @@ class Okno(wx.Frame):
         self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj.Hide()
         self.panel_kier.Hide()
+        self.panel_opcje.Hide()
         self.panel_zlec_przegladaj = PanelZlecPrzegladaj(self)
         self.panel_zlec_przegladaj.Show()
 
@@ -652,13 +680,17 @@ class Okno(wx.Frame):
         self.panel_zlec_przydziel.Hide()
         self.panel_zlec_dodaj.Hide()
         self.panel_zlec_przegladaj.Hide()
+        self.panel_opcje.Hide()
         self.panel_kier = PanelKier(self)
         self.panel_kier.Show()
     
     def OnHelp(self, e):
-        dialog = wx.MessageDialog(self, "W celu uzyskania pomocy pisz do jedrekwisniewski@wp.pl", "Okno Pomocy", wx.OK)
-        dialog.ShowModal()
-        dialog.Destroy()
+        self.panel_zlec_przydziel.Hide()
+        self.panel_zlec_dodaj.Hide()
+        self.panel_zlec_przegladaj.Hide()
+        self.panel_kier.Hide()
+        self.panel_opcje = PanelOpcje(self)
+        self.panel_opcje.Show()
         
     def OnExit(self,e):
         db.close()
